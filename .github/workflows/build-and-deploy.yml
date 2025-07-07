@@ -1,0 +1,83 @@
+name: Build and Deploy 🚀
+
+on:
+  push:
+    branches: ['*'] # Triggers on all branches
+  pull_request:
+    branches: ['main'] # Specifically captures PRs targeting main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - name: Checkout Code 🛎️
+        uses: actions/checkout@v4
+      - name: Setup Node.js 📦
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+
+      - name: Install Dependencies 🔧
+        run: npm ci
+
+      - name: Lint and Coverage Tests 🧪
+        run: |
+          npm run lint
+          npm run coverage
+
+      - name: Build 🏗️
+        run: |
+          npm run type-check
+          npm run build-only -- --base=/pogo/
+
+      - name: Build Storybook 📚
+        if: github.ref == 'refs/heads/main'
+        run: |
+          npm run build-storybook
+          mkdir -p dist/ux
+          mv storybook-static/* dist/ux/
+
+      - name: Archive Coverage Reports 📊
+        if: github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p dist/coverage
+          mv coverage/* dist/coverage/
+
+      - name: Run E2E Tests 🧪
+        if: github.ref == 'refs/heads/main'
+        run: |
+          npx playwright install --with-deps
+          npm run test-e2e
+
+      - name: Archive E2E Test Reports 📊
+        if: github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p dist/e2e
+          # Copy E2E test reports (adjust path if needed)
+          cp -r playwright-report/* dist/e2e/ || echo "No E2E test reports generated"
+
+      - name: Upload Artifact 📤
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages 🚀
+        id: deployment
+        uses: actions/deploy-pages@v4

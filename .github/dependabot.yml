@@ -1,0 +1,33 @@
+# .github/dependabot.yml
+
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'daily'
+      time: '05:00'
+      timezone: 'Europe/Bucharest'
+    target-branch: 'main'
+    versioning-strategy: 'auto'
+    labels:
+      - 'dependencies'
+      - 'security'
+      - 'automated'
+    reviewers:
+      - '@andreivisma'
+    commit-message:
+      prefix: 'deps'
+      include: 'scope'
+    open-pull-requests-limit: 10
+    groups:
+      production-dependencies:
+        dependency-type: 'production'
+        update-types:
+          - 'patch'
+          - 'minor'
+      development-dependencies:
+        dependency-type: 'development'
+        update-types:
+          - 'patch'
+          - 'minor'
